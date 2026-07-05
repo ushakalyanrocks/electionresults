@@ -65,8 +65,8 @@ export default function App() {
 
       <StatusStrip constituencies={data.constituencies} />
 
-      <div className="container" style={{ marginTop: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div className="glass" style={{ display: 'flex', padding: 4, borderRadius: 999, overflowX: 'auto' }}>
+      <div className="container" style={{ marginTop: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+        <div className="glass scroll-thin" style={{ display: 'flex', padding: 4, borderRadius: 999, overflowX: 'auto', flex: '1 1 auto', minWidth: 0, maxWidth: '100%' }}>
           {TABS.map(tb => (
             <button key={tb} onClick={() => setTab(tb)} className="btn btn-sm" style={{
               border: 'none', borderRadius: 999, whiteSpace: 'nowrap',
@@ -78,7 +78,7 @@ export default function App() {
           ))}
         </div>
         {isAdmin && (
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
             <button className="btn btn-sm" onClick={() => setShowUsers(true)}>👤 Users</button>
             <button className="btn btn-sm" onClick={() => setShowSetup(true)}>⚙ {t('settings')}</button>
           </div>

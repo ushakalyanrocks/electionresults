@@ -139,11 +139,11 @@ export default function HeroScoreboard({ alliances, parties, constituencies, maj
 
   return (
     <div className="container" style={{ marginTop: 20 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
         <div style={{ fontSize: 13, color: 'var(--text-mid)' }} className="tabular">
           Majority: {majorityLine} &nbsp;·&nbsp; {totalSeats} {t('constituencies')}
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {isAdmin && (
             <button className="btn btn-sm" onClick={() => setReordering(true)}>⠿ Reorder</button>
           )}
@@ -163,9 +163,9 @@ export default function HeroScoreboard({ alliances, parties, constituencies, maj
         </div>
       </div>
 
-      <div style={{
+      <div className="hero-grid" style={{
         display: 'grid', gap: 14,
-        gridTemplateColumns: `repeat(${Math.min(orderedAlliances.length || 1, 5)}, minmax(180px, 1fr))`
+        gridTemplateColumns: `repeat(${Math.min(orderedAlliances.length || 1, 5)}, minmax(150px, 1fr))`
       }}>
         {orderedAlliances.map(a => {
           const totals = allianceTotals[a.code] || { won: 0, leading: 0 };
@@ -181,6 +181,18 @@ export default function HeroScoreboard({ alliances, parties, constituencies, maj
           );
         })}
       </div>
+
+      <style>{`
+        @media (max-width: 920px) {
+          .hero-grid { grid-template-columns: repeat(3, minmax(130px, 1fr)) !important; }
+        }
+        @media (max-width: 620px) {
+          .hero-grid { grid-template-columns: repeat(2, minmax(130px, 1fr)) !important; }
+        }
+        @media (max-width: 380px) {
+          .hero-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
 
       {reordering && (
         <ReorderPanel

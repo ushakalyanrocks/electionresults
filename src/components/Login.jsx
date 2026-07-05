@@ -34,13 +34,18 @@ export default function Login() {
     }}>
       <form
         onSubmit={submit}
-        className="glass"
+        className="glass login-card"
         style={{
           width: 380, maxWidth: '100%', padding: 36,
           animation: shake ? 'shake .4s' : 'none'
         }}
       >
-        <style>{`@keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-8px)} 40%,80%{transform:translateX(8px)} }`}</style>
+        <style>{`
+          @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-8px)} 40%,80%{transform:translateX(8px)} }
+          @media (max-width: 420px) {
+            .login-card { padding: 24px !important; }
+          }
+        `}</style>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
           <div style={{

@@ -296,7 +296,7 @@ export default function DataEntry({ constituencies, parties, alliances = [], vot
   const partyByCode = Object.fromEntries(parties.map(p => [p.code, p]));
 
   return (
-    <div className="container" style={{ marginTop: 20, maxWidth: 1160, display: 'grid', gap: 16, gridTemplateColumns: 'minmax(320px, 480px) minmax(320px, 1fr)', alignItems: 'start' }}>
+    <div className="container data-entry-grid" style={{ marginTop: 20, maxWidth: 1160, display: 'grid', gap: 16, gridTemplateColumns: 'minmax(320px, 480px) minmax(320px, 1fr)', alignItems: 'start' }}>
       <div style={{ minWidth: 0 }}>
         <div className="glass" style={{ padding: 20 }}>
           {!confirming ? (
@@ -325,9 +325,9 @@ export default function DataEntry({ constituencies, parties, alliances = [], vot
 
               {constId && (
                 <>
-                  {/* Round + Status side by side */}
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <div style={{ flex: 1 }}>
+                  {/* Round + Status side by side (wraps on very narrow phones) */}
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <div style={{ flex: '1 1 130px' }}>
                       <label style={{ fontSize: 12.5, color: 'var(--text-mid)' }}>
                         {t('roundNumberLabel')} <span style={{ color: 'var(--text-lo)' }}>({t('suggested')}: {suggestedRound})</span>
                       </label>
@@ -345,7 +345,7 @@ export default function DataEntry({ constituencies, parties, alliances = [], vot
                         </div>
                       )}
                     </div>
-                    <div style={{ flex: 1 }}>
+                    <div style={{ flex: '1 1 130px' }}>
                       <label style={{ fontSize: 12.5, color: 'var(--text-mid)' }}>{t('statusLabel')}</label>
                       <select value={status} onChange={e => setStatus(e.target.value)} style={{ width: '100%', marginTop: 6 }}>
                         <option value="counting">{t('counting')}</option>
@@ -505,7 +505,7 @@ export default function DataEntry({ constituencies, parties, alliances = [], vot
 
       <style>{`
         @media (max-width: 900px) {
-          .container[style] { grid-template-columns: 1fr !important; }
+          .data-entry-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </div>

@@ -63,8 +63,12 @@ body.day-mode {
 
 html, body, #root { height: 100%; }
 
+html { -webkit-text-size-adjust: 100%; }
+
 body {
   margin: 0;
+  width: 100%;
+  overflow-x: hidden; /* safety net: nothing on this page should ever force horizontal scroll on mobile */
   background:
     radial-gradient(1200px 600px at 15% -10%, rgba(47,125,214,0.10), transparent 60%),
     radial-gradient(900px 500px at 110% 10%, rgba(47,125,214,0.07), transparent 55%),
@@ -74,6 +78,8 @@ body {
   -webkit-font-smoothing: antialiased;
   transition: background-color .25s var(--ease), color .25s var(--ease);
 }
+
+img, svg { max-width: 100%; }
 
 h1, h2, h3, .display {
   font-family: var(--font-display);
@@ -193,6 +199,12 @@ input::placeholder { color: var(--text-lo); }
 
 @media (max-width: 720px) {
   .container { padding: 0 12px; }
+}
+
+@media (max-width: 400px) {
+  .container { padding: 0 10px; }
+  .btn { padding: 8px 14px; font-size: 13px; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
 }
 
 /* ---- Floating suggestion dropdowns: MUST be opaque. The translucent .glass
