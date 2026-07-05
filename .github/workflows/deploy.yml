@@ -1,41 +1,43 @@
 name: Deploy to GitHub Pages
-
 on:
   push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-
+    branches: [main]
+  workflow_dispatch: {}
 permissions:
-  contents: write   # <-- ADD THIS: grants GITHUB_TOKEN push access for this workflow
-
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'   # <-- ADD THIS: don't deploy on PRs, only on merge/push to main
-
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
-
+          node-version: '20'
       - name: Install dependencies
-        run: npm ci   # <-- use npm ci, not npm install (see note below)
-
+        run: npm ci
       - name: Build
-        run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        run: npm run build
+      - name: Upload build artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
+          path: dist
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
