@@ -8,28 +8,32 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write   # <-- ADD THIS: grants GITHUB_TOKEN push access for this workflow
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+    if: github.event_name == 'push'   # <-- ADD THIS: don't deploy on PRs, only on merge/push to main
+
     steps:
-      - uses: actions/checkout@v3
-      
+      - uses: actions/checkout@v4
+
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
-      
+
       - name: Install dependencies
-        run: npm install
-      
+        run: npm ci   # <-- use npm ci, not npm install (see note below)
+
       - name: Build
         run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-      
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
