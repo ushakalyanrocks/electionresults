@@ -29,7 +29,6 @@ dist-ssr
 .env.*.local
 
 # Dependencies
-package-lock.json
 yarn.lock
 pnpm-lock.yaml
 
