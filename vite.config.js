@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 
 // Base path = repo name for GitHub Pages project sites.
 // Change REPO_NAME if the GitHub repo is named differently.
-const REPO_NAME = 'tjelectionresults-v2';
+const REPO_NAME = 'electionresults';
 
 export default defineConfig({
   plugins: [react()],
