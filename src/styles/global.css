@@ -1,0 +1,207 @@
+/* ============================================================
+   TJ Election Results v2 — Design Tokens
+   Direction: election-night broadcast control room, not a
+   generic SaaS dashboard. Deep ink background, glass panels,
+   alliance colors are the only saturated color allowed to
+   "own" a surface. Big, confident numerals for the scoreboard
+   (the thing a channel would put on air), everything else
+   quiet and dense like a real newsroom MIS.
+   ============================================================ */
+
+:root {
+  /* ---- Light blue & white — default theme ---- */
+  --bg-0: #eaf3fb;
+  --bg-1: #f4f9fd;
+  --bg-2: #ffffff;
+  --glass: rgba(255, 255, 255, 0.65);
+  --glass-border: rgba(30, 84, 140, 0.14);
+  --glass-hi: rgba(30, 84, 140, 0.06);
+  --text-hi: #10233b;
+  --text-mid: #48607c;
+  --text-lo: #82a0bb;
+  --line: rgba(30, 84, 140, 0.14);
+
+  --accent: #2f7dd6;           /* signature accent — sky blue */
+  --accent-soft: rgba(47, 125, 214, 0.14);
+  --good: #17a668;
+  --warn: #d98a12;
+  --bad: #e5484d;
+
+  /* Fixed alliance colors — must stay consistent everywhere */
+  --c-dmk: #e0223b;
+  --c-admk: #0a9d4f;
+  --c-tvk: #9b30d0;
+  --c-ntk: #ff8c00;
+  --c-oth: #7d8296;
+
+  --radius-s: 8px;
+  --radius-m: 14px;
+  --radius-l: 22px;
+
+  --font-display: 'Space Grotesk', 'Noto Sans Tamil', sans-serif;
+  --font-body: 'Inter', 'Noto Sans Tamil', sans-serif;
+
+  --shadow-1: 0 8px 30px rgba(30, 84, 140, 0.12);
+  --ease: cubic-bezier(.2,.8,.2,1);
+}
+
+body.day-mode {
+  --bg-0: #f2f7fc;
+  --bg-1: #f8fbfd;
+  --bg-2: #ffffff;
+  --glass: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(30, 84, 140, 0.10);
+  --glass-hi: rgba(30, 84, 140, 0.045);
+  --text-hi: #10233b;
+  --text-mid: #4d5f78;
+  --text-lo: #8b9fb6;
+  --line: rgba(30, 84, 140, 0.10);
+  --shadow-1: 0 8px 24px rgba(30, 84, 140, 0.08);
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(1200px 600px at 15% -10%, rgba(47,125,214,0.10), transparent 60%),
+    radial-gradient(900px 500px at 110% 10%, rgba(47,125,214,0.07), transparent 55%),
+    var(--bg-0);
+  color: var(--text-hi);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  transition: background-color .25s var(--ease), color .25s var(--ease);
+}
+
+h1, h2, h3, .display {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+button { font-family: inherit; }
+
+.tabular { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
+
+/* ---- Glass surface, the base building block everywhere ---- */
+.glass {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-1);
+}
+
+/* ---- Modal surface: solid, not glass. A dialog floats over its own dimmed
+   backdrop already — using near-transparent .glass here made text nearly
+   unreadable (barely-tinted panel over a blurred dark background). Modals
+   need a fully opaque surface for real contrast. ---- */
+.modal-surface {
+  background: var(--bg-2);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-m);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+}
+
+.scroll-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+.scroll-thin::-webkit-scrollbar-thumb { background: var(--glass-hi); border-radius: 8px; }
+.scroll-thin::-webkit-scrollbar-track { background: transparent; }
+
+/* ---- Buttons ---- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px 18px; border-radius: var(--radius-s);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-hi);
+  color: var(--text-hi);
+  font-weight: 600; font-size: 14px; cursor: pointer;
+  transition: transform .15s var(--ease), background .15s var(--ease), opacity .15s;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+.btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.btn-primary { background: var(--accent); border-color: transparent; color: #fff; }
+.btn-ghost { background: transparent; }
+.btn-sm { padding: 6px 12px; font-size: 12.5px; }
+.btn-danger { background: var(--bad); color: #fff; border-color: transparent; }
+
+/* ---- Inputs ---- */
+input, select, textarea {
+  background: var(--glass-hi);
+  border: 1px solid var(--glass-border);
+  color: var(--text-hi);
+  border-radius: var(--radius-s);
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .15s var(--ease);
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+input::placeholder { color: var(--text-lo); }
+
+/* visible keyboard focus everywhere for a11y */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---- LIVE pulse (kept red — broadcast "on air" convention, independent of --accent) ---- */
+.live-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #ff3d5e;
+  box-shadow: 0 0 0 0 rgba(255,61,94,0.6);
+  animation: pulse 1.6s infinite;
+}
+@keyframes pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(255,61,94,.55); }
+  70%  { box-shadow: 0 0 0 9px rgba(255,61,94,0); }
+  100% { box-shadow: 0 0 0 0 rgba(255,61,94,0); }
+}
+
+/* ---- Status pills ---- */
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+}
+.pill-counting { background: rgba(255,176,32,.15); color: var(--warn); }
+.pill-counting .dot { background: var(--warn); animation: pulse-amber 1.4s infinite; }
+.pill-declared { background: rgba(23,201,116,.15); color: var(--good); }
+.pill-waitlist { background: rgba(120,124,140,.18); color: var(--text-mid); }
+.pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+@keyframes pulse-amber { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+
+/* toast */
+.toast-wrap { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.toast-item {
+  padding: 11px 18px; border-radius: 999px; font-size: 13.5px; font-weight: 600;
+  background: var(--bg-2); border: 1px solid var(--glass-border); color: var(--text-hi);
+  box-shadow: var(--shadow-1);
+  animation: toast-in .25s var(--ease);
+}
+.toast-item.err { border-color: rgba(255,77,79,.5); color: #ffb3b4; }
+.toast-item.ok { border-color: rgba(23,201,116,.5); }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .live-dot, .pill-counting .dot { animation: none; }
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
+.container { max-width: 1320px; margin: 0 auto; padding: 0 20px; }
+
+@media (max-width: 720px) {
+  .container { padding: 0 12px; }
+}
+
+/* ---- Floating suggestion dropdowns: MUST be opaque. The translucent .glass
+   surface let the rows behind bleed through, making constituency names look
+   overlapped. Same lesson as .modal-surface. ---- */
+.dropdown {
+  background: var(--bg-2);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .5);
+}
+.dropdown > div { background: var(--bg-2); }
