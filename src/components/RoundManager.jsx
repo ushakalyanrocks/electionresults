@@ -174,19 +174,22 @@ export default function RoundManager({ constituency, parties, votesForConst, can
     try {
       const ops = [];
       const changes = [];
+      const diff = []; // structured old->new, stored as JSON in update_logs.reason
       for (const p of relevantParties) {
         const before = votesForConst[p.code]?.[r];
         const raw = (draft[p.code] ?? '').trim();
         if (raw === '' && before) {
           ops.push(sb.from('party_votes').delete()
             .match({ constituency_id: constituency.id, party_code: p.code, round: r }));
-          changes.push(`${p.code.toUpperCase()} removed`);
+          changes.push(`${p.code.toUpperCase()} ${fmtNum(before.votes)} → removed`);
+          diff.push({ party: p.code, old: before.votes, new: null });
         } else if (raw !== '' && Number(raw) !== before?.votes) {
           ops.push(sb.from('party_votes').upsert({
             constituency_id: constituency.id, party_code: p.code, round: r,
             votes: Number(raw), created_by: user.id
           }, { onConflict: 'constituency_id,party_code,round' }));
-          changes.push(`${p.code.toUpperCase()} → ${fmtNum(raw)}`);
+          changes.push(`${p.code.toUpperCase()} ${before ? fmtNum(before.votes) : '—'} → ${fmtNum(raw)}`);
+          diff.push({ party: p.code, old: before?.votes ?? null, new: Number(raw) });
         }
       }
       if (!ops.length) { cancelEdit(); return; }
@@ -196,7 +199,8 @@ export default function RoundManager({ constituency, parties, votesForConst, can
       }
       await sb.from('update_logs').insert([{
         constituency_id: constituency.id, round: r, action: 'correction',
-        message: `Round ${r} edited: ${changes.join(', ')}`,
+        message: `Round ${r} corrected: ${changes.join(', ')}`,
+        reason: diff.length ? JSON.stringify(diff) : null,
         actor: user.id, actor_name: fullName || user.email
       }]);
       push(`Round ${r} updated`, 'success');

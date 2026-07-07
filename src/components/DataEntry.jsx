@@ -260,8 +260,17 @@ export default function DataEntry({ constituencies, parties, alliances = [], vot
       }, { onConflict: 'constituency_id' });
       if (e2) throw e2;
 
-      // 3. One log line for the whole round.
+      // 3. One log line for the whole round. If this round already existed,
+      //    record the old -> new values (votes prop is still pre-refresh here).
       const partyByCode = Object.fromEntries(parties.map(p => [p.code, p]));
+      let diff = null;
+      if (editingExistingRound) {
+        const prevForConst = votes[Number(constId)] || {};
+        const d = rows
+          .map(rw => ({ party: rw.party_code, old: prevForConst[rw.party_code]?.[roundNum]?.votes ?? null, new: rw.votes }))
+          .filter(x => x.old !== x.new);
+        if (d.length) diff = JSON.stringify(d);
+      }
       const detail = rows.map(r => `${(partyByCode[r.party_code]?.name || r.party_code).toUpperCase()} ${fmtNum(r.votes)}`).join(' · ');
       await sb.from('update_logs').insert([{
         constituency_id: Number(constId), party_code: leaderCode, round: roundNum,
@@ -269,6 +278,7 @@ export default function DataEntry({ constituencies, parties, alliances = [], vot
         message: rows.length
           ? `Round ${roundNum}: ${detail} — ${(partyByCode[leaderCode]?.name || '').toUpperCase()} leading (+${fmtNum(autoMargin)})${editingExistingRound ? ' [corrected]' : ''}`
           : `Round ${roundNum}: marked ${(partyByCode[leaderCode]?.name || leaderCode || '').toUpperCase()} leading (status: ${status})`,
+        reason: diff,
         actor: user.id, actor_name: fullName || user.email
       }]);
 

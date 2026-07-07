@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useLang } from '../context/LangContext';
 import { fmtNum, normCode } from '../lib/format';
 import RoundManager, { computePartyTotals } from './RoundManager';
@@ -7,7 +7,12 @@ const PAGE_SIZE = 25;
 
 function StatusPill({ status, t }) {
   const map = { counting: 'pill-counting', declared: 'pill-declared', waitlist: 'pill-waitlist' };
-  return <span className={`pill ${map[status] || 'pill-waitlist'}`}><span className="dot" />{t(status || 'waitlist')}</span>;
+  return (
+    <span className={`pill ${map[status] || 'pill-waitlist'}`}>
+      {status === 'declared' ? <span className="check-badge">✓</span> : <span className="dot" />}
+      {t(status || 'waitlist')}
+    </span>
+  );
 }
 
 // Small "party + votes" cell like the v1 UI: colored dot + party name,
@@ -42,6 +47,11 @@ export default function ResultsTable({ constituencies, parties, votes, candidate
 
   const partyByCode = useMemo(() => Object.fromEntries(parties.map(p => [p.code, p])), [parties]);
 
+  // Flash rows whose leader total changed since the last data refresh
+  // (visual only — mirrors the sample's live-update highlight).
+  const prevTotalsRef = useRef({});
+  const [flashIds, setFlashIds] = useState(() => new Set());
+
   // Enrich every constituency with ranked party totals: leader / 2nd / 3rd / 4th + margin.
   const enriched = useMemo(() => {
     return constituencies.map(c => {
@@ -67,6 +77,20 @@ export default function ResultsTable({ constituencies, parties, votes, candidate
       };
     });
   }, [constituencies, votes, parties, partyByCode]);
+
+  useEffect(() => {
+    const changed = [];
+    enriched.forEach(c => {
+      const prev = prevTotalsRef.current[c.id];
+      if (prev !== undefined && prev !== c._leaderTotal) changed.push(c.id);
+      prevTotalsRef.current[c.id] = c._leaderTotal;
+    });
+    if (changed.length) {
+      setFlashIds(new Set(changed));
+      const timer = setTimeout(() => setFlashIds(new Set()), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [enriched]);
 
   const filtered = useMemo(() => {
     const s = filters.search.trim().toLowerCase();
@@ -143,8 +167,9 @@ export default function ResultsTable({ constituencies, parties, votes, candidate
                 return (
                   <Fragment key={c.id}>
                     <tr
+                      className={flashIds.has(c.id) ? 'flash-row' : ''}
                       style={{
-                        background: i % 2 ? 'transparent' : 'var(--glass)',
+                        background: i % 2 ? 'transparent' : 'var(--bg-1)',
                         borderLeft: `3px solid ${leaderColor || 'transparent'}`,
                         cursor: 'pointer'
                       }}
@@ -188,7 +213,7 @@ export default function ResultsTable({ constituencies, parties, votes, candidate
                     </tr>
                     {isOpen && (
                       <tr key={`${c.id}-detail`}>
-                        <td colSpan={12} style={{ background: 'var(--glass)', padding: 0 }}>
+                        <td colSpan={12} style={{ background: 'var(--bg-1)', padding: 0 }}>
                           {/* Read-only here — editing + chart live in the Summary tab */}
                           <RoundManager constituency={c} parties={parties} votesForConst={votes[c.id] || {}} refresh={refresh} readOnly showChart={false} />
                         </td>
@@ -210,7 +235,7 @@ export default function ResultsTable({ constituencies, parties, votes, candidate
             const isOpen = expanded === c.id;
             const leaderColor = c._leader?.party?.color;
             return (
-              <div key={c.id} style={{ borderLeft: `3px solid ${leaderColor || 'transparent'}`, borderBottom: '1px solid var(--line)', padding: 12 }}
+              <div key={c.id} className={flashIds.has(c.id) ? 'flash-row' : ''} style={{ borderLeft: `3px solid ${leaderColor || 'transparent'}`, borderBottom: '1px solid var(--line)', padding: 12 }}
                 onClick={() => setExpanded(isOpen ? null : c.id)}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <div style={{ fontWeight: 600 }}>{lang === 'ta' && c.name_ta ? c.name_ta : c.name_en}</div>

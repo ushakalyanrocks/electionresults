@@ -3,6 +3,7 @@ import { sb } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LangContext';
 import { useToast } from '../context/ToastContext';
+import { computeMajority } from '../lib/format';
 
 // This panel is the ONLY UI surface in the app that can change election scope
 // (general vs by-election + which constituencies are in play). It is gated by
@@ -35,7 +36,18 @@ export default function ElectionModeSetup({ config, onClose }) {
     return allConstituencies.filter(c => c.name_en.toLowerCase().includes(s) || c.district.toLowerCase().includes(s));
   }, [allConstituencies, search]);
 
+  // Majority auto-follows the seat count: general -> 118 (of 234),
+  // by-election of 5 -> 3. Admin can still type an override; any
+  // change to mode/selection recalculates it again.
+  const [majorityTouched, setMajorityTouched] = useState(true); // saved value shown until scope changes
+  useEffect(() => {
+    if (majorityTouched) return;
+    const seats = mode === 'by_election' ? selected.size : (allConstituencies.length || 234);
+    if (seats > 0) setMajorityLine(computeMajority(seats));
+  }, [mode, selected, allConstituencies, majorityTouched]);
+
   const toggle = (id) => {
+    setMajorityTouched(false); // scope changed -> majority auto-recalculates
     setSelected(prev => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
@@ -80,7 +92,7 @@ export default function ElectionModeSetup({ config, onClose }) {
 
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
           {['general', 'by_election'].map(m => (
-            <button key={m} onClick={() => setMode(m)} className="btn"
+            <button key={m} onClick={() => { setMode(m); setMajorityTouched(false); }} className="btn"
               style={{ flex: 1, background: mode === m ? 'var(--accent)' : 'var(--glass-hi)', color: mode === m ? '#fff' : 'var(--text-hi)' }}>
               {m === 'general' ? t('general') : t('byElection')}
             </button>
@@ -89,7 +101,13 @@ export default function ElectionModeSetup({ config, onClose }) {
 
         <div style={{ marginTop: 14 }}>
           <label style={{ fontSize: 12.5, color: 'var(--text-mid)' }}>Majority line</label>
-          <input type="number" value={majorityLine} onChange={e => setMajorityLine(e.target.value)} style={{ width: 120, marginLeft: 10 }} />
+          <input type="number" value={majorityLine}
+            onChange={e => { setMajorityTouched(true); setMajorityLine(e.target.value); }}
+            style={{ width: 120, marginLeft: 10 }} />
+          <span style={{ fontSize: 11.5, color: 'var(--text-lo)', marginLeft: 10 }}>
+            auto: ⌊seats/2⌋+1
+            <button className="btn btn-ghost btn-sm" style={{ marginLeft: 6 }} onClick={() => setMajorityTouched(false)}>recalculate</button>
+          </span>
         </div>
 
         {mode === 'by_election' && (

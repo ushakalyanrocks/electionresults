@@ -3,6 +3,7 @@ import { useLang } from '../context/LangContext';
 import { useAuth } from '../context/AuthContext';
 import { fmtNum } from '../lib/format';
 import ReorderPanel from './ReorderPanel';
+import MajorityTrack from './MajorityTrack';
 
 function useCountUp(target, duration = 700) {
   const [val, setVal] = useState(target);
@@ -181,6 +182,13 @@ export default function HeroScoreboard({ alliances, parties, constituencies, maj
           );
         })}
       </div>
+
+      <MajorityTrack
+        alliances={orderedAlliances}
+        allianceTotals={allianceTotals}
+        majorityLine={majorityLine}
+        totalSeats={totalSeats}
+      />
 
       <style>{`
         @media (max-width: 920px) {

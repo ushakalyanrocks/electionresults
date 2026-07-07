@@ -25,12 +25,18 @@ export function fmtRelative(dateStr) {
   return d.toLocaleDateString('en-IN');
 }
 
+// Majority = simple majority of the seats actually in play.
+// General (234) -> 118. By-election of 5 -> 3. Always derived, never hardcoded.
+export function computeMajority(seats) {
+  return Math.floor((Number(seats) || 0) / 2) + 1;
+}
+
 export const STRINGS = {
   en: {
     live: 'LIVE', declared: 'Declared', counting: 'Counting', waitlist: 'Waitlist',
     of: 'of', constituencies: 'constituencies', search: 'Search constituency…',
     allianceView: 'Alliance view', partyView: 'Party view',
-    liveResults: 'Live Results', dataEntry: 'Data Entry', summary: 'Summary', updateLog: 'Update Log',
+    liveResults: 'Live Results', dataEntry: 'Data Entry', summary: 'Summary', updateLog: 'Update Log', upload: 'Upload',
     login: 'Login', logout: 'Logout', email: 'Email', password: 'Password',
     round: 'Round', total: 'Total', statusUpdate: 'Status Update', voteCountUpdate: 'Vote Count Update',
     thisRoundOnly: 'This Round Only', totalSoFar: 'Total So Far', submit: 'Submit', undo: 'Undo',
@@ -62,7 +68,7 @@ export const STRINGS = {
     live: 'நேரலை', declared: 'அறிவிக்கப்பட்டது', counting: 'எண்ணிக்கை', waitlist: 'காத்திருப்பு',
     of: '/', constituencies: 'தொகுதிகள்', search: 'தொகுதியைத் தேடுங்கள்…',
     allianceView: 'கூட்டணி பார்வை', partyView: 'கட்சி பார்வை',
-    liveResults: 'நேரலை முடிவுகள்', dataEntry: 'தரவு பதிவு', summary: 'சுருக்கம்', updateLog: 'பதிவேடு',
+    liveResults: 'நேரலை முடிவுகள்', dataEntry: 'தரவு பதிவு', summary: 'சுருக்கம்', updateLog: 'பதிவேடு', upload: 'பதிவேற்றம்',
     login: 'உள்நுழைய', logout: 'வெளியேறு', email: 'மின்னஞ்சல்', password: 'கடவுச்சொல்',
     round: 'சுற்று', total: 'மொத்தம்', statusUpdate: 'நிலை புதுப்பிப்பு', voteCountUpdate: 'வாக்கு எண்ணிக்கை',
     thisRoundOnly: 'இந்த சுற்று மட்டும்', totalSoFar: 'இதுவரை மொத்தம்', submit: 'சமர்ப்பி', undo: 'செயல்தவிர்',

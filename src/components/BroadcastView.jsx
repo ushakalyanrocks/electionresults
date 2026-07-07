@@ -47,7 +47,7 @@ export default function BroadcastView({ alliances, parties, constituencies, majo
       </div>
 
       <div style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,.55)',
+        position: 'fixed', bottom: 0, left: 0, right: 0, background: 'rgba(18,22,28,.85)', color: '#fff',
         borderTop: '1px solid var(--glass-border)', padding: '14px 0', overflow: 'hidden', whiteSpace: 'nowrap'
       }}>
         <div style={{ display: 'inline-block', animation: 'ticker 60s linear infinite', fontSize: 18 }}>

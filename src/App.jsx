@@ -14,8 +14,10 @@ import Summary from './components/Summary';
 import BroadcastView from './components/BroadcastView';
 import ElectionModeSetup from './components/ElectionModeSetup';
 import AdminUsers from './components/AdminUsers';
+import Upload from './components/Upload';
+import { computeMajority } from './lib/format';
 
-const TABS = ['liveResults', 'dataEntry', 'summary', 'updateLog'];
+const TABS = ['liveResults', 'dataEntry', 'upload', 'summary', 'updateLog'];
 
 export default function App() {
   const { session, loading, isAdmin } = useAuth();
@@ -28,12 +30,20 @@ export default function App() {
 
   const isBroadcast = new URLSearchParams(window.location.search).get('mode') === 'broadcast';
 
+  // Majority is derived from the seats actually in play. A stored
+  // majority_line is honoured only when it fits the current scope —
+  // so a stale 118 from a general election never leaks into a
+  // 5-seat by-election (there it becomes 3, and the track spans 5).
+  const seatCount = data.constituencies?.length || 0;
+  const cfgLine = Number(data.config?.majority_line) || 0;
+  const majorityLine = cfgLine > 0 && cfgLine <= seatCount ? cfgLine : computeMajority(seatCount);
+
   if (isBroadcast) {
     if (data.loading) return null;
     return (
       <BroadcastView
         alliances={data.alliances} parties={data.parties} constituencies={data.constituencies}
-        majorityLine={data.config?.majority_line || 118} totalSeats={data.constituencies.length}
+        majorityLine={majorityLine} totalSeats={data.constituencies.length}
       />
     );
   }
@@ -59,7 +69,7 @@ export default function App() {
 
       <HeroScoreboard
         alliances={data.alliances} parties={data.parties} constituencies={data.constituencies}
-        majorityLine={data.config?.majority_line || 118} totalSeats={data.constituencies.length}
+        majorityLine={majorityLine} totalSeats={data.constituencies.length}
         refresh={data.refresh}
       />
 
@@ -96,8 +106,12 @@ export default function App() {
         <DataEntry constituencies={data.constituencies} parties={data.parties} alliances={data.alliances} votes={data.votes} candidates={data.candidates} refresh={data.refresh} />
       )}
 
+      {tab === 'upload' && (
+        <Upload constituencies={data.constituencies} parties={data.parties} votes={data.votes} candidates={data.candidates} refresh={data.refresh} />
+      )}
+
       {tab === 'summary' && (
-        <Summary alliances={data.alliances} parties={data.parties} constituencies={data.constituencies} majorityLine={data.config?.majority_line || 118} votes={data.votes} candidates={data.candidates} refresh={data.refresh} />
+        <Summary alliances={data.alliances} parties={data.parties} constituencies={data.constituencies} majorityLine={majorityLine} votes={data.votes} candidates={data.candidates} refresh={data.refresh} />
       )}
 
       {tab === 'updateLog' && (
