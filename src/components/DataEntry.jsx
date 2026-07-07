@@ -5,6 +5,7 @@ import { useLang } from '../context/LangContext';
 import { useToast } from '../context/ToastContext';
 import { fmtNum } from '../lib/format';
 import { PartyTotalsBarChart, computePartyTotals, computeRoundCumulative } from './RoundManager';
+import MultiDataEntry from './MultiDataEntry';
 
 // Right-side live panel (v1 style): round-wise cumulative totals per party,
 // leader + margin per round, and the ALL ROUNDS TOTAL bar chart.
@@ -119,6 +120,7 @@ export default function DataEntry({ constituencies, parties, alliances = [], vot
   const [voteInputs, setVoteInputs] = useState({}); // { partyCode: string }
   const [manualLeader, setManualLeader] = useState(''); // only used when no votes entered
   const [confirming, setConfirming] = useState(false);
+  const [multiMode, setMultiMode] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const matches = useMemo(() => {
@@ -305,13 +307,27 @@ export default function DataEntry({ constituencies, parties, alliances = [], vot
 
   const partyByCode = Object.fromEntries(parties.map(p => [p.code, p]));
 
+  if (multiMode) {
+    return (
+      <MultiDataEntry
+        constituencies={constituencies} parties={parties} votes={votes}
+        candidates={candidates} refresh={refresh} onBack={() => setMultiMode(false)}
+      />
+    );
+  }
+
   return (
     <div className="container data-entry-grid" style={{ marginTop: 20, maxWidth: 1160, display: 'grid', gap: 16, gridTemplateColumns: 'minmax(320px, 480px) minmax(320px, 1fr)', alignItems: 'start' }}>
       <div style={{ minWidth: 0 }}>
         <div className="glass" style={{ padding: 20 }}>
           {!confirming ? (
             <form onSubmit={openConfirm} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ fontWeight: 700 }}>🗳 {t('voteUpdateTitle')}</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                <div style={{ fontWeight: 700 }}>🗳 {t('voteUpdateTitle')}</div>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setMultiMode(true)}>
+                  ⊞ {t('multiEntry')}
+                </button>
+              </div>
 
               {/* Constituency */}
               <div style={{ position: 'relative' }}>

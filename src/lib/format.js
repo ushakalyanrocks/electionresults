@@ -62,7 +62,11 @@ export const STRINGS = {
     grandTotal: 'Grand Total', leader: 'Leader',
     noAccess: 'You do not have data-entry access', selectConstituencyErr: 'Select a constituency',
     enterRoundErr: 'Enter the round number', enterVotesErr: 'Enter votes OR select the leading party',
-    saveFailed: 'Failed to save round', estimatedNote: '* estimated (backfilled round)'
+    saveFailed: 'Failed to save round', estimatedNote: '* estimated (backfilled round)',
+    multiEntry: 'Multi Constituency', singleEntry: 'Single Entry',
+    multiPickHint: 'Select the constituencies to enter together — up to',
+    multiOpenGrid: 'Open entry grid', multiChangeSeats: 'Change seats',
+    multiSubmitAll: 'Submit all filled', multiMaxMsg: 'Maximum is', multiBulkDone: 'Bulk submit'
   },
   ta: {
     live: 'நேரலை', declared: 'அறிவிக்கப்பட்டது', counting: 'எண்ணிக்கை', waitlist: 'காத்திருப்பு',
@@ -94,6 +98,10 @@ export const STRINGS = {
     grandTotal: 'மொத்தம்', leader: 'முன்னிலை',
     noAccess: 'உங்களுக்கு தரவு பதிவு அனுமதி இல்லை', selectConstituencyErr: 'ஒரு தொகுதியைத் தேர்ந்தெடுக்கவும்',
     enterRoundErr: 'சுற்று எண்ணை உள்ளிடவும்', enterVotesErr: 'வாக்குகளை உள்ளிடவும் அல்லது முன்னிலை கட்சியைத் தேர்ந்தெடுக்கவும்',
-    saveFailed: 'சுற்றைச் சேமிக்க முடியவில்லை', estimatedNote: '* மதிப்பிடப்பட்டது (பின்னர் நிரப்பப்பட்ட சுற்று)'
+    saveFailed: 'சுற்றைச் சேமிக்க முடியவில்லை', estimatedNote: '* மதிப்பிடப்பட்டது (பின்னர் நிரப்பப்பட்ட சுற்று)',
+    multiEntry: 'பல தொகுதிகள்', singleEntry: 'ஒற்றை பதிவு',
+    multiPickHint: 'ஒன்றாக பதிவு செய்ய தொகுதிகளைத் தேர்வு செய்யவும் — அதிகபட்சம்',
+    multiOpenGrid: 'பதிவு கட்டம் திற', multiChangeSeats: 'தொகுதிகள் மாற்று',
+    multiSubmitAll: 'நிரப்பியவை அனைத்தும் சமர்ப்பி', multiMaxMsg: 'அதிகபட்சம்', multiBulkDone: 'மொத்த சமர்ப்பிப்பு'
   }
 };
