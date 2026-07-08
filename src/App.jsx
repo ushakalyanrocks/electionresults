@@ -12,6 +12,8 @@ import DataEntry from './components/DataEntry';
 import UpdateLog from './components/UpdateLog';
 import Summary from './components/Summary';
 import BroadcastView from './components/BroadcastView';
+import BroadcastRouter from './broadcast/BroadcastRouter';
+import ProducerPanel from './components/ProducerPanel';
 import ElectionModeSetup from './components/ElectionModeSetup';
 import AdminUsers from './components/AdminUsers';
 import Upload from './components/Upload';
@@ -28,7 +30,10 @@ export default function App() {
   const [showSetup, setShowSetup] = useState(false);
   const [showUsers, setShowUsers] = useState(false);
 
-  const isBroadcast = new URLSearchParams(window.location.search).get('mode') === 'broadcast';
+  const urlParams = new URLSearchParams(window.location.search);
+  const isBroadcast = urlParams.get('mode') === 'broadcast';
+  const isProducer = urlParams.get('mode') === 'producer';
+  const broadcastPanel = urlParams.get('panel');
 
   // Majority is derived from the seats actually in play. A stored
   // majority_line is honoured only when it fits the current scope —
@@ -37,6 +42,25 @@ export default function App() {
   const seatCount = data.constituencies?.length || 0;
   const cfgLine = Number(data.config?.majority_line) || 0;
   const majorityLine = cfgLine > 0 && cfgLine <= seatCount ? cfgLine : computeMajority(seatCount);
+
+  // OBS panel mode (?mode=broadcast&panel=…). RLS only serves data to
+  // authenticated sessions, so each OBS Browser Source needs one login —
+  // its cookie/localStorage profile then persists the session across
+  // restarts (persistSession is on in supabaseClient).
+  if (isBroadcast && broadcastPanel) {
+    if (loading) return null;
+    if (!session) return <Login />;
+    if (data.loading) return null;
+    return <BroadcastRouter data={data} majorityLine={majorityLine} params={urlParams} />;
+  }
+
+  // Producer live-control (?mode=producer) — admin gated inside the panel.
+  if (isProducer) {
+    if (loading) return <div style={{ minHeight: '100vh' }} />;
+    if (!session) return <Login />;
+    if (data.loading) return null;
+    return <ProducerPanel constituencies={data.constituencies} />;
+  }
 
   if (isBroadcast) {
     if (data.loading) return null;
@@ -89,6 +113,7 @@ export default function App() {
         </div>
         {isAdmin && (
           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <button className="btn btn-sm" onClick={() => window.open('?mode=producer', '_blank')}>🎛 Broadcast</button>
             <button className="btn btn-sm" onClick={() => setShowUsers(true)}>👤 Users</button>
             <button className="btn btn-sm" onClick={() => setShowSetup(true)}>⚙ {t('settings')}</button>
           </div>

@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useLang } from '../context/LangContext';
 import { fmtNum, normCode } from '../lib/format';
 import RoundManager, { computePartyTotals } from './RoundManager';
+import PartySymbol from './PartySymbol';
 
 const PAGE_SIZE = 25;
 
@@ -20,20 +21,19 @@ function StatusPill({ status, t }) {
 function PartyCell({ entry, candidate }) {
   if (!entry) return <span style={{ color: 'var(--text-lo)' }}>—</span>;
   return (
-    <div style={{ lineHeight: 1.25 }}>
-      <div style={{ fontWeight: 700, color: entry.party.color || 'var(--text-hi)', whiteSpace: 'nowrap' }}>
-        <span style={{
-          display: 'inline-block', width: 8, height: 8, borderRadius: '50%',
-          background: entry.party.color || 'var(--text-lo)', marginRight: 5, verticalAlign: 'middle'
-        }} />
-        {entry.party.name}
-      </div>
-      {candidate?.name && (
-        <div style={{ fontSize: 11, color: 'var(--text-hi)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }}>
-          {candidate.name}
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+      <PartySymbol party={entry.party} size={30} />
+      <div style={{ lineHeight: 1.25, minWidth: 0 }}>
+        <div style={{ fontWeight: 700, color: entry.party.color || 'var(--text-hi)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {entry.party.name}
         </div>
-      )}
-      <div className="tabular" style={{ fontSize: 12, color: 'var(--text-mid)' }}>{fmtNum(entry.total)}</div>
+        {candidate?.name && (
+          <div style={{ fontSize: 11, color: 'var(--text-hi)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }}>
+            {candidate.name}
+          </div>
+        )}
+        <div className="tabular" style={{ fontSize: 12, color: 'var(--text-mid)' }}>{fmtNum(entry.total)}</div>
+      </div>
     </div>
   );
 }
@@ -182,16 +182,20 @@ export default function ResultsTable({ constituencies, parties, votes, candidate
                       <td style={{ padding: '10px 12px', fontSize: 12.5, color: 'var(--text-mid)' }}>{c.district}</td>
                       <td style={{ padding: '10px 12px', fontSize: 13 }}>
                         {c._leader ? (
-                          <span style={{ fontWeight: 700, color: leaderColor, whiteSpace: 'nowrap' }}>
-                            <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: leaderColor, marginRight: 5, verticalAlign: 'middle' }} />
-                            {c._leader.party.name}{c._leader.manual ? ' 📌' : ''}
-                          </span>
-                        ) : '—'}
-                        {c._leader && candidates[c.id]?.[c._leader.party.code]?.name && (
-                          <div style={{ fontSize: 11, color: 'var(--text-hi)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 150 }}>
-                            {candidates[c.id][c._leader.party.code].name}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                            <PartySymbol party={c._leader.party} size={30} />
+                            <div style={{ lineHeight: 1.25, minWidth: 0 }}>
+                              <div style={{ fontWeight: 700, color: leaderColor, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {c._leader.party.name}{c._leader.manual ? ' 📌' : ''}
+                              </div>
+                              {candidates[c.id]?.[c._leader.party.code]?.name && (
+                                <div style={{ fontSize: 11, color: 'var(--text-hi)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 150 }}>
+                                  {candidates[c.id][c._leader.party.code].name}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        )}
+                        ) : '—'}
                       </td>
                       <td className="tabular" style={{ padding: '10px 12px', fontWeight: 700, color: leaderColor }}>
                         {c._leaderTotal ? fmtNum(c._leaderTotal) : '—'}

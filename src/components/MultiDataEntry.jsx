@@ -4,7 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LangContext';
 import { useToast } from '../context/ToastContext';
 import { fmtNum, normCode } from '../lib/format';
-import { computePartyTotals } from './RoundManager';
+import RoundManager, { computePartyTotals } from './RoundManager';
+import PartySymbol from './PartySymbol';
 
 // ============================================================
 // Multi-Constituency Data Entry — up to MAX_SELECT seats in one
@@ -86,7 +87,7 @@ function draftFor(c) {
   };
 }
 
-function Card({ c, draft, setDraft, parties, votesForConst, candsForConst, onSubmit, onReset, lang, t }) {
+function Card({ c, draft, setDraft, parties, votesForConst, candsForConst, onSubmit, onReset, onViewResults, lang, t }) {
   // Same contestant rule as DataEntry: only candidate-mapped parties,
   // fallback to all parties so entry is never blocked.
   const entryParties = useMemo(() => {
@@ -161,6 +162,17 @@ function Card({ c, draft, setDraft, parties, votesForConst, candsForConst, onSub
         </span>
       </div>
 
+      {existingRounds.length > 0 && (
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm"
+          style={{ fontSize: 10.5, padding: '3px 8px', alignSelf: 'flex-start' }}
+          onClick={() => onViewResults(c)}
+        >
+          📊 {t('viewResults') || 'View Results'}
+        </button>
+      )}
+
       <div style={{ display: 'flex', gap: 6 }}>
         <div style={{ flex: 1 }}>
           <input
@@ -205,7 +217,7 @@ function Card({ c, draft, setDraft, parties, votesForConst, candsForConst, onSub
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         {entryParties.map(p => (
           <div key={p.code} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: p.color || 'var(--text-lo)', flexShrink: 0 }} />
+            <PartySymbol party={p} size={14} />
             <span style={{ flex: 1, fontSize: 11.5, fontWeight: 600, color: p.color || 'var(--text-hi)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflowEllipsis: 'ellipsis', textOverflow: 'ellipsis', minWidth: 0 }}>
               {p.name}
               {candsForConst[p.code]?.name && (
@@ -259,6 +271,7 @@ export default function MultiDataEntry({ constituencies, parties, votes, candida
   const [search, setSearch] = useState('');
   const [drafts, setDrafts] = useState(() => persisted?.drafts || {}); // { [cid]: draft }
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [resultsModal, setResultsModal] = useState(null); // constituency object, or null when closed
 
   // Persist after every change — this is what makes tab-out/tab-back (and
   // even a full reload) keep whatever was typed. Nothing here clears it;
@@ -505,10 +518,49 @@ export default function MultiDataEntry({ constituencies, parties, votes, candida
             candsForConst={candidates[c.id] || {}}
             onSubmit={submitCard}
             onReset={resetCard}
+            onViewResults={setResultsModal}
             lang={lang} t={t}
           />
         ))}
       </div>
+
+      {resultsModal && (
+        <div
+          role="dialog" aria-modal="true"
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1000,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16
+          }}
+          onClick={() => setResultsModal(null)}
+        >
+          <div
+            className="glass"
+            style={{ maxWidth: 640, width: '100%', maxHeight: '85vh', overflowY: 'auto', padding: 16, borderRadius: 12 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+              <div style={{ fontWeight: 700, fontSize: 15 }}>
+                {lang === 'ta' && resultsModal.name_ta ? resultsModal.name_ta : resultsModal.name_en}
+                <span style={{ fontSize: 11.5, color: 'var(--text-lo)', fontWeight: 400, marginLeft: 8 }}>
+                  {resultsModal.district}
+                </span>
+              </div>
+              <button className="btn btn-ghost btn-sm" onClick={() => setResultsModal(null)}>
+                ✕ {t('close') || 'Close'}
+              </button>
+            </div>
+            <RoundManager
+              constituency={resultsModal}
+              parties={parties}
+              votesForConst={votes[resultsModal.id] || {}}
+              candidatesForConst={candidates[resultsModal.id] || {}}
+              refresh={refresh}
+              readOnly
+              showChart
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

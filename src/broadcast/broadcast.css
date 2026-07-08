@@ -1,0 +1,134 @@
+/* ============================================================
+   OBS Broadcast Panels — fixed-size "puzzle piece" stages.
+   Every panel renders inside a .bcast-stage with a hard px size
+   (never fluid), so producers can crop/scale each Browser Source
+   in OBS without layout reflow. Set the OBS Browser Source
+   width/height to the panel's native size below, then transform.
+
+   Native sizes:
+     ticker      1920 × 120
+     spotlight    640 × 800
+     district     720 × 1000
+     voteshare    560 × 180
+     scoreboard  1920 × 300
+
+   &bg=transparent → html/body go transparent (body.bcast-transparent),
+   cards keep their own solid/gradient fills so text stays legible
+   over a camera feed.
+   ============================================================ */
+
+body.bcast-mode {
+  margin: 0;
+  overflow: hidden;
+  background: #0b0e14; /* solid studio background by default */
+}
+body.bcast-mode.bcast-transparent {
+  background: transparent !important;
+}
+body.bcast-mode #root { background: transparent; }
+
+.bcast-stage {
+  position: relative;
+  overflow: hidden;
+  font-family: 'Inter', 'Noto Sans Tamil', sans-serif;
+  color: #fff;
+  box-sizing: border-box;
+}
+.bcast-stage *, .bcast-stage *::before, .bcast-stage *::after { box-sizing: border-box; }
+
+.bcast-tabular { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
+
+/* Solid card surface used inside every panel — deliberately opaque so
+   transparent-bg compositing over camera never washes out the numbers. */
+.bcast-card {
+  background: linear-gradient(180deg, #141a24 0%, #0e131c 100%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+}
+
+.bcast-brand {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: #ff4d61;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.bcast-brand::before {
+  content: '';
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #ff4d61;
+  animation: bcast-blink 1.6s ease-in-out infinite;
+}
+@keyframes bcast-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+/* Fallback chip when a photo/symbol URL is missing */
+.bcast-chip {
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; color: #fff; border-radius: 50%;
+  text-transform: uppercase; overflow: hidden; flex-shrink: 0;
+}
+.bcast-chip img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ---------- Ticker (1920×120) ---------- */
+.bcast-ticker { width: 1920px; height: 120px; display: flex; align-items: stretch; }
+.bcast-ticker-label {
+  width: 190px; flex-shrink: 0;
+  display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px;
+  background: linear-gradient(135deg, #1d3557, #14263f);
+  border-right: 3px solid #ff4d61;
+}
+.bcast-ticker-track { flex: 1; overflow: hidden; position: relative; display: flex; align-items: center; }
+.bcast-ticker-rail {
+  display: inline-flex; align-items: center; white-space: nowrap;
+  animation: bcast-marquee var(--bcast-marquee-dur, 40s) linear infinite;
+  will-change: transform;
+}
+@keyframes bcast-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.bcast-ticker-item { display: inline-flex; align-items: center; gap: 14px; padding: 0 42px; }
+.bcast-ticker-sep { width: 1px; height: 56px; background: rgba(255, 255, 255, 0.14); }
+.bcast-seat-count {
+  font-size: 52px; font-weight: 800; line-height: 1;
+  transition: transform 0.15s ease;
+}
+.bcast-seat-count.bcast-pop { animation: bcast-pop 0.9s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes bcast-pop {
+  0% { transform: scale(1); filter: brightness(1); }
+  25% { transform: scale(1.28); filter: brightness(1.6); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+/* ---------- Spotlight (640×800) ---------- */
+.bcast-spotlight { width: 640px; height: 800px; display: flex; flex-direction: column; }
+.bcast-spot-fade { animation: bcast-fade 0.45s ease; }
+@keyframes bcast-fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.bcast-spot-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 18px; border-top: 1px solid rgba(255, 255, 255, 0.07);
+  min-height: 0; flex: 1;
+}
+
+/* ---------- District (720×1000) ---------- */
+.bcast-district { width: 720px; height: 1000px; display: flex; flex-direction: column; }
+.bcast-district-list { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.bcast-district-row {
+  flex: 1; min-height: 0; display: flex; align-items: center; gap: 12px;
+  padding: 0 18px; border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+.bcast-tag {
+  font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 3px 9px; border-radius: 4px; flex-shrink: 0;
+}
+.bcast-tag.won { background: #128a3e; color: #fff; }
+.bcast-tag.leading { background: #b7791f; color: #fff; }
+.bcast-tag.waitlist { background: rgba(255, 255, 255, 0.12); color: rgba(255, 255, 255, 0.6); }
+
+/* ---------- Vote share (560×180) ---------- */
+.bcast-voteshare { width: 560px; height: 180px; display: flex; flex-direction: column; }
+
+/* ---------- Scoreboard (1920×300) ---------- */
+.bcast-scoreboard { width: 1920px; height: 300px; display: flex; flex-direction: column; }
+.bcast-swing-up { color: #35d07f; }
+.bcast-swing-down { color: #ff6b6b; }

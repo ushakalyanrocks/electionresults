@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LangContext';
 import { useToast } from '../context/ToastContext';
 import { fmtNum } from '../lib/format';
+import PartySymbol from './PartySymbol';
 
 // Running-total rule: walk rounds ascending — a 'total' entry REPLACES the
 // running total, a 'round_only' entry ADDS to it. Handles mixed-mode entry
@@ -73,7 +74,8 @@ export function PartyTotalsBarChart({ parties, totals, candidatesForConst = {} }
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(${entries.length}, 1fr)`, gap: 6, marginBottom: 6 }}>
         {entries.map(p => (
           <div key={p.code} style={{ textAlign: 'center', fontSize: 10.5, fontWeight: 700, color: p.color || 'var(--text-hi)' }}>
-            {p.name}
+            <PartySymbol party={p} size={18} style={{ marginBottom: 2 }} />
+            <div>{p.name}</div>
             {candidatesForConst[p.code]?.name && (
               <div style={{ fontSize: 9.5, fontWeight: 400, color: 'var(--text-mid)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {candidatesForConst[p.code].name}
@@ -250,7 +252,10 @@ export default function RoundManager({ constituency, parties, votesForConst, can
             <th style={{ textAlign: 'left', padding: '4px 8px', color: 'var(--text-mid)' }}>{t('round')}</th>
             {relevantParties.map(p => (
               <th key={p.code} style={{ textAlign: 'right', padding: '4px 8px', color: p.color || 'var(--text-mid)' }}>
-                {p.name}
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <PartySymbol party={p} size={13} />
+                  {p.name}
+                </span>
                 {candidatesForConst[p.code]?.name && (
                   <div style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-mid)' }}>{candidatesForConst[p.code].name}</div>
                 )}
