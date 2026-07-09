@@ -6,6 +6,7 @@ import { useToast } from '../context/ToastContext';
 import { fmtNum } from '../lib/format';
 import { PartyTotalsBarChart, computePartyTotals, computeRoundCumulative } from './RoundManager';
 import MultiDataEntry from './MultiDataEntry';
+import PartySymbol from './PartySymbol';
 
 // Right-side live panel (v1 style): round-wise cumulative totals per party,
 // leader + margin per round, and the ALL ROUNDS TOTAL bar chart.
@@ -431,7 +432,7 @@ export default function DataEntry({ constituencies, parties, alliances = [], vot
                             border: `1px solid ${isLeaderNow ? (p.color || 'var(--accent)') : 'var(--line)'}`,
                             background: 'var(--glass)'
                           }}>
-                            <span style={{ width: 9, height: 9, borderRadius: '50%', background: p.color || 'var(--text-lo)', flexShrink: 0 }} />
+                            <PartySymbol party={p} size={32} />
                             <div style={{ minWidth: 0, flex: 1 }}>
                               <div style={{ fontWeight: 700, fontSize: 13, color: p.color || 'var(--text-hi)' }}>
                                 {partyLabel(p)} {isLeaderNow ? '👑' : ''}

@@ -187,6 +187,7 @@ function Card({ c, draft, setDraft, parties, votesForConst, candsForConst, onSub
           className="me-field"
           style={{ fontSize: 12, cursor: 'pointer' }}>
           <option value="counting">{t('counting')}</option>
+          <option value="declared">{t('declared')}</option>
         </select>
       </div>
 
@@ -216,7 +217,7 @@ function Card({ c, draft, setDraft, parties, votesForConst, candsForConst, onSub
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         {entryParties.map(p => (
           <div key={p.code} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <PartySymbol party={p} size={14} />
+            <PartySymbol party={p} size={32} />
             <span style={{ flex: 1, fontSize: 11.5, fontWeight: 600, color: p.color || 'var(--text-hi)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflowEllipsis: 'ellipsis', textOverflow: 'ellipsis', minWidth: 0 }}>
               {p.name}
               {candsForConst[p.code]?.name && (

@@ -253,7 +253,7 @@ export default function RoundManager({ constituency, parties, votesForConst, can
             {relevantParties.map(p => (
               <th key={p.code} style={{ textAlign: 'right', padding: '4px 8px', color: p.color || 'var(--text-mid)' }}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  <PartySymbol party={p} size={13} />
+                  <PartySymbol party={p} size={35} />
                   {p.name}
                 </span>
                 {candidatesForConst[p.code]?.name && (
