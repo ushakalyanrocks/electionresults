@@ -60,24 +60,30 @@ export function PartyTotalsBarChart({ parties, totals, candidatesForConst = {} }
 
   return (
     <div style={{
-      marginTop: 12, padding: '12px 14px', borderRadius: 10,
-      background: 'var(--glass-hi)', border: '1px solid var(--line)'
+      marginTop: 12, padding: '16px 18px', borderRadius: 10,
+      background: 'var(--glass-hi)', border: '1px solid var(--line)', width: '100%'
     }}>
       <div style={{
-        fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '.08em',
-        fontWeight: 700, color: 'var(--text-mid)', marginBottom: 10
+        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        flexWrap: 'wrap', gap: 8, fontSize: 12.5, textTransform: 'uppercase', letterSpacing: '.08em',
+        fontWeight: 700, color: 'var(--text-mid)', marginBottom: 14
       }}>
-        📊 {t('total')} — {t('partyTotalsAllRounds')}
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flex: '1 1 auto', minWidth: 0 }}>
+          <span>📊</span>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {t('total')} — {t('partyTotalsAllRounds')}
+          </span>
+        </span>
       </div>
 
       {/* names */}
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${entries.length}, 1fr)`, gap: 6, marginBottom: 6 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${entries.length}, minmax(0, 1fr))`, gap: 10, marginBottom: 10 }}>
         {entries.map(p => (
-          <div key={p.code} style={{ textAlign: 'center', fontSize: 10.5, fontWeight: 700, color: p.color || 'var(--text-hi)' }}>
-            <PartySymbol party={p} size={18} style={{ marginBottom: 2 }} />
+          <div key={p.code} style={{ textAlign: 'center', fontSize: 11.5, fontWeight: 700, color: p.color || 'var(--text-hi)' }}>
+            <PartySymbol party={p} size={32} style={{ marginBottom: 4 }} />
             <div>{p.name}</div>
             {candidatesForConst[p.code]?.name && (
-              <div style={{ fontSize: 9.5, fontWeight: 400, color: 'var(--text-mid)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div style={{ fontSize: 10.5, fontWeight: 400, color: 'var(--text-mid)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {candidatesForConst[p.code].name}
               </div>
             )}

@@ -13,7 +13,11 @@ export default function MajorityTrack({ alliances, allianceTotals, majorityLine,
   );
 
   return (
-    <div className="glass" style={{ padding: '14px 16px 12px', marginTop: 14 }}>
+    <div className="glass" style={{
+      padding: '14px 16px 12px', marginTop: 14,
+      width: 'calc(100% + 24px)', marginLeft: -12, marginRight: -12,
+      boxSizing: 'border-box'
+    }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 9, flexWrap: 'wrap', gap: 6 }}>
         <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-mid)', textTransform: 'uppercase', letterSpacing: '.03em' }}>
           Seats toward majority

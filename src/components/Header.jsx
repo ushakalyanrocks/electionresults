@@ -62,7 +62,7 @@ export default function Header({ lastUpdated, onRefresh, integrityWarning }) {
       <style>{`
         .app-header {
           position: sticky; top: 12px; z-index: 40;
-          margin: 12px auto 0; max-width: 1320px;
+          width: 100%; max-width: none; margin: 12px 0 0;
           display: flex; align-items: center; justify-content: space-between;
           padding: 10px 18px; border-radius: 18px; gap: 12px;
         }
