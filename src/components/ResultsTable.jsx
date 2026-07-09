@@ -164,12 +164,14 @@ export default function ResultsTable({ constituencies, parties, votes, candidate
               {pageRows.map((c, i) => {
                 const isOpen = expanded === c.id;
                 const leaderColor = c._leader?.party?.color;
+                const rowNumber = pageSafe * PAGE_SIZE + i + 1;
+                const isOddRow = rowNumber % 2 === 1;
                 return (
                   <Fragment key={c.id}>
                     <tr
                       className={flashIds.has(c.id) ? 'flash-row' : ''}
                       style={{
-                        background: i % 2 ? 'transparent' : 'var(--bg-1)',
+                        background: isOddRow ? 'var(--accent-soft)' : 'var(--bg-1)',
                         borderLeft: `3px solid ${leaderColor || 'transparent'}`,
                         cursor: 'pointer'
                       }}
@@ -235,11 +237,13 @@ export default function ResultsTable({ constituencies, parties, votes, candidate
 
         {/* Mobile cards */}
         <div className="results-mobile" style={{ display: 'none', flexDirection: 'column' }}>
-          {pageRows.map(c => {
+          {pageRows.map((c, i) => {
             const isOpen = expanded === c.id;
             const leaderColor = c._leader?.party?.color;
+            const rowNumber = pageSafe * PAGE_SIZE + i + 1;
+            const isOddRow = rowNumber % 2 === 1;
             return (
-              <div key={c.id} className={flashIds.has(c.id) ? 'flash-row' : ''} style={{ borderLeft: `3px solid ${leaderColor || 'transparent'}`, borderBottom: '1px solid var(--line)', padding: 12 }}
+              <div key={c.id} className={flashIds.has(c.id) ? 'flash-row' : ''} style={{ background: isOddRow ? 'var(--accent-soft)' : 'var(--bg-1)', borderLeft: `3px solid ${leaderColor || 'transparent'}`, borderBottom: '1px solid var(--line)', padding: 12 }}
                 onClick={() => setExpanded(isOpen ? null : c.id)}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <div style={{ fontWeight: 600 }}>{lang === 'ta' && c.name_ta ? c.name_ta : c.name_en}</div>

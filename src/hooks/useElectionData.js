@@ -41,8 +41,15 @@ export function useElectionData() {
     try {
       setError(null);
 
-      const { data: cfg, error: e0 } = await sb.from('election_config').select('*').eq('id', 1).single();
+      const { data: cfg, error: e0 } = await sb
+        .from('election_config')
+        .select('*')
+        .eq('id', 1)
+        .limit(1)
+        .maybeSingle();
       if (e0) throw e0;
+
+      const safeCfg = cfg || { id: 1, mode: 'general', selected_constituency_ids: [], majority_line: 118 };
 
       const { data: alli, error: e1 } = await sb.from('alliances').select('*').order('sort_order');
       if (e1) throw e1;
@@ -52,7 +59,7 @@ export function useElectionData() {
       const parts = (partsRaw || []).map(p => ({ ...p, code: normCode(p.code) }));
 
       let constQuery = sb.from('constituencies_latest').select('*').order('id');
-      const expectedIds = cfg.mode === 'by_election' ? (cfg.selected_constituency_ids || []) : null;
+      const expectedIds = safeCfg.mode === 'by_election' ? (safeCfg.selected_constituency_ids || []) : null;
       if (expectedIds && expectedIds.length > 0) {
         constQuery = constQuery.in('id', expectedIds);
       }
@@ -100,14 +107,14 @@ export function useElectionData() {
 
       if (!mountedRef.current) return;
 
-      const expectedCount = cfg.mode === 'general' ? 234 : (expectedIds?.length || 0);
+      const expectedCount = safeCfg.mode === 'general' ? 234 : (expectedIds?.length || 0);
       setIntegrityWarning(
         expectedCount && cs.length !== expectedCount
           ? `Expected ${expectedCount} constituencies, fetched ${cs.length}. Check election_config / constituencies table.`
           : null
       );
 
-      setConfig(cfg);
+      setConfig(safeCfg);
       setAlliances(alli || []);
       setParties(parts || []);
       setConstituencies(cs || []);

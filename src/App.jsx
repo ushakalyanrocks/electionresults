@@ -88,7 +88,7 @@ export default function App() {
   }
 
   return (
-    <div style={{ paddingBottom: 40 }}>
+    <div style={{ paddingBottom: 40, minHeight: '100vh', width: '100%' }}>
       <Header lastUpdated={data.lastUpdated} onRefresh={data.refresh} integrityWarning={data.integrityWarning} />
 
       <HeroScoreboard

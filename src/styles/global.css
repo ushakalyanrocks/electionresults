@@ -199,7 +199,7 @@ input::placeholder { color: var(--text-lo); }
   * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
 
-.container { max-width: 1320px; margin: 0 auto; padding: 0 20px; }
+.container { width: 100%; max-width: none; margin: 0 auto; padding: 0 12px; }
 
 @media (max-width: 720px) {
   .container { padding: 0 12px; }

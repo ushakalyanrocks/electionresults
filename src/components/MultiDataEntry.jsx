@@ -82,7 +82,7 @@ function clearPersisted(userId) {
 function draftFor(c) {
   return {
     round: '', mode: 'total',
-    status: c.status === 'waitlist' ? 'counting' : (c.status || 'counting'),
+    status: c.status === 'declared' || c.status === 'waitlist' ? 'counting' : (c.status || 'counting'),
     inputs: {}, busy: false, done: false
   };
 }
@@ -187,7 +187,6 @@ function Card({ c, draft, setDraft, parties, votesForConst, candsForConst, onSub
           className="me-field"
           style={{ fontSize: 12, cursor: 'pointer' }}>
           <option value="counting">{t('counting')}</option>
-          <option value="declared">{t('declared')}</option>
         </select>
       </div>
 
@@ -265,8 +264,9 @@ export default function MultiDataEntry({ constituencies, parties, votes, candida
   const { push } = useToast();
 
   const persisted = useMemo(() => loadPersisted(user?.id), [user?.id]);
+  const eligibleConstituencies = useMemo(() => constituencies.filter(c => c.status !== 'declared'), [constituencies]);
 
-  const [selected, setSelected] = useState(() => new Set(persisted?.selected || []));
+  const [selected, setSelected] = useState(() => new Set((persisted?.selected || []).filter(id => eligibleConstituencies.some(c => c.id === id))));
   const [gridOpen, setGridOpen] = useState(() => persisted?.gridOpen || false);
   const [search, setSearch] = useState('');
   const [drafts, setDrafts] = useState(() => persisted?.drafts || {}); // { [cid]: draft }
@@ -281,14 +281,25 @@ export default function MultiDataEntry({ constituencies, parties, votes, candida
     savePersisted(user.id, { selected: [...selected], gridOpen, drafts });
   }, [user?.id, selected, gridOpen, drafts]);
 
+  useEffect(() => {
+    setSelected(prev => {
+      const next = new Set();
+      prev.forEach(id => {
+        if (eligibleConstituencies.some(c => c.id === id)) next.add(id);
+      });
+      return next;
+    });
+  }, [eligibleConstituencies]);
+
   const partyByCode = useMemo(() => Object.fromEntries(parties.map(p => [p.code, p])), [parties]);
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
-    if (!s) return constituencies;
-    return constituencies.filter(c =>
+    const pool = eligibleConstituencies;
+    if (!s) return pool;
+    return pool.filter(c =>
       c.name_en.toLowerCase().includes(s) || (c.name_ta || '').includes(s) || c.district.toLowerCase().includes(s));
-  }, [constituencies, search]);
+  }, [eligibleConstituencies, search]);
 
   const toggle = (id) => {
     setSelected(prev => {
@@ -303,7 +314,7 @@ export default function MultiDataEntry({ constituencies, parties, votes, candida
   const openGrid = () => {
     setDrafts(prev => {
       const d = { ...prev };
-      constituencies.filter(c => selected.has(c.id)).forEach(c => {
+      eligibleConstituencies.filter(c => selected.has(c.id)).forEach(c => {
         if (!d[c.id]) d[c.id] = draftFor(c); // only seed newly-added seats, keep existing typed drafts
       });
       return d;
@@ -400,7 +411,7 @@ export default function MultiDataEntry({ constituencies, parties, votes, candida
   const submitAllFilled = async () => {
     setBulkBusy(true);
     let ok = 0, fail = 0;
-    for (const c of constituencies.filter(x => selected.has(x.id))) {
+    for (const c of eligibleConstituencies.filter(x => selected.has(x.id))) {
       const draft = drafts[c.id];
       if (!draft || draft.busy) continue;
       const roundNum = Number(draft.round);
@@ -426,7 +437,7 @@ export default function MultiDataEntry({ constituencies, parties, votes, candida
     );
   }
 
-  const selectedList = constituencies.filter(c => selected.has(c.id));
+  const selectedList = eligibleConstituencies.filter(c => selected.has(c.id));
   const filledCount = selectedList.filter(c => {
     const d = drafts[c.id];
     return d && d.round !== '' && Object.values(d.inputs).some(v => (v ?? '').trim() !== '');

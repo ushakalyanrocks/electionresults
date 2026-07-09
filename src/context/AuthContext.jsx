@@ -15,8 +15,17 @@ export function AuthProvider({ children }) {
       .from('rolemapping')
       .select('role, full_name')
       .eq('user_id', userId)
-      .single();
-    if (!error && data) {
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.warn('Unable to load role mapping', error);
+      setRole('viewer');
+      setFullName('');
+      return;
+    }
+
+    if (data) {
       setRole(data.role);
       setFullName(data.full_name || '');
     } else {
