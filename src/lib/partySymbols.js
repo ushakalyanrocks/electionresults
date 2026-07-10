@@ -22,18 +22,39 @@ const PARTY_SYMBOLS = {
   INC:    { name: 'Hand',                    symbolUrl: null, favicon: 'https://www.google.com/s2/favicons?domain=inc.in&sz=128' },
   PMK:    { name: 'Mango',                   symbolUrl: null, favicon: 'https://www.google.com/s2/favicons?domain=pmkofficial.com&sz=128' },
   VCK:    { name: 'Pot',                     symbolUrl: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cg fill='%23d35400'%3E%3Cpath d='M16 24h32v6h6v8c0 8-6 14-14 14H24c-8 0-14-6-14-14v-8h6z'/%3E%3Cpath d='M20 24V18h24v6H20z' fill='%23f9e79f'/%3E%3C/g%3E%3C/svg%3E", favicon: 'https://www.google.com/s2/favicons?domain=vck.party/&sz=128' },
-  IUML:   { name: 'Star',                    symbolUrl: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23155b8f'/%3E%3Cpolygon points='32,14 38,28 54,30 42,39 46,54 32,46 18,54 22,39 10,30 26,28' fill='%23f1c40f'/%3E%3C/svg%3E", favicon: null },
+
+  // FIXED: IUML's reserved symbol is "Ladder" — not "Star". Star was never
+  // associated with IUML; Ladder has been their symbol since the party's
+  // founding, confirmed via ECI's own Para 10 allotment notifications.
+  IUML:   { name: 'Ladder',                  symbolUrl: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cg stroke='%23155b8f' stroke-width='4' stroke-linecap='round'%3E%3Cline x1='18' y1='6' x2='14' y2='58'/%3E%3Cline x1='46' y1='6' x2='50' y2='58'/%3E%3Cline x1='15.5' y1='16' x2='49' y2='16'/%3E%3Cline x1='15' y1='28' x2='49.3' y2='28'/%3E%3Cline x1='14.5' y1='40' x2='49.7' y2='40'/%3E%3C/g%3E%3C/svg%3E", favicon: null },
+
+  // Historical/founding symbol was "Top", derecognized by ECI in 2010 and
+  // never reclaimed (denied again in 2024; given "Matchbox" as a one-off).
+  // For the 2026 TN Assembly election, MDMK contested all its seats under
+  // ally DMK's "Rising Sun" symbol — it had no independent symbol on the
+  // ballot this cycle. Kept "Top" here as the party's traditional/
+  // best-known identity; if your results data tags MDMK winners under the
+  // DMK banner rather than its own party code, you may not need this entry
+  // to render at all. Re-check if MDMK breaks from DMK in a future cycle.
+  MDMK:   { name: 'Top',                     symbolUrl: null, favicon: null },
+
   DMDK:   { name: 'Nagara',                  symbolUrl: null, favicon: null },
-  NTK:    { name: 'Farmer',                  symbolUrl: null, favicon: 'https://www.google.com/s2/favicons?domain=naamtamilar.org&sz=128' },
+
+  // Full official ECI name is "Farmer Carrying Plough" (finalized 10 May
+  // 2025); "Farmer" alone is the commonly used shorthand and still correct.
+  NTK:    { name: 'Farmer Carrying Plough',  symbolUrl: null, favicon: 'https://www.google.com/s2/favicons?domain=naamtamilar.org&sz=128' },
+
   CPI:    { name: 'Ears of Corn and Sickle', symbolUrl: null, favicon: 'https://www.google.com/s2/favicons?domain=cpiindia.org&sz=128' },
   CPM:    { name: 'Hammer Sickle and Star',  symbolUrl: null, favicon: 'https://www.google.com/s2/favicons?domain=cpim.org&sz=128' },
   AMMK:   { name: 'Gift Box',                symbolUrl: null, favicon: null },
-  MDMK:   { name: 'Top',                     symbolUrl: null, favicon: null },
-  MNM:    { name: 'Torchlight',              symbolUrl: null, favicon: 'https://www.google.com/s2/favicons?domain=maiam.com&sz=128' }
+
+  // FIXED: official ECI name is "Battery Torch" (as allotted Jan 2026),
+  // not "Torchlight". Same symbol — just the correct label.
+  MNM:    { name: 'Battery Torch',           symbolUrl: null, favicon: 'https://www.google.com/s2/favicons?domain=maiam.com&sz=128' }
 };
 
 // To add a real ballot-symbol image for any party (recommended for DMDK,
-// AMMK, MDMK which have no favicon fallback at all):
+// AMMK, MDMK, IUML which have no favicon fallback at all):
 //   1. Get a small PNG/SVG of the symbol (transparent bg, ~64-128px).
 //   2. Base64-encode it:
 //        macOS/Linux: base64 -w0 admk-symbol.png
