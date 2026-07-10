@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { fmtNum } from '../lib/format';
 import ReorderPanel from './ReorderPanel';
 import MajorityTrack from './MajorityTrack';
+import PartySymbol from './PartySymbol';
 
 function useCountUp(target, duration = 700) {
   const [val, setVal] = useState(target);
@@ -78,11 +79,15 @@ function AllianceCard({ a, totals, pct, memberParties, partyTally, trend, view }
               <div
                 key={p.code}
                 style={{
-                  display: 'flex', justifyContent: 'space-between', padding: '4px 8px', fontSize: 12.5,
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '4px 8px', fontSize: 12.5,
                   opacity: sum === 0 ? 0.5 : 1
                 }}
               >
-                <span>{p.name}</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                  <PartySymbol party={p} size={16} />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+                </span>
                 <span className="tabular">{sum}</span>
               </div>
             );
