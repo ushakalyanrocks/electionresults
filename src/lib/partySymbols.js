@@ -7,13 +7,17 @@
 // favicon: website favicon via Google's s2 service — used as the icon
 //          until/unless you swap in a real symbol image URL
 
-const ADMK_ENTRY = { name: 'Two Leaves', symbolUrl: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23d81b2a'/%3E%3Cpath d='M33 19c-5 7-12 14-11 23 1 6 5 11 11 11s10-5 11-11c1-9-6-16-11-23z' fill='%23109d47' stroke='%23000' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M31 19c5 7 12 14 11 23-1 6-5 11-11 11s-10-5-11-11c-1-9 6-16 11-23z' fill='%2342c04c' stroke='%23000' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E", favicon: 'https://www.aiadmk.com/favicon.ico' };
+// Real Election Commission of India symbol artwork, sourced from Wikimedia
+// Commons (CC-BY-SA govt election symbol scans). Using the stable
+// Special:FilePath redirect so we don't depend on guessing upload hash paths.
+const ADMK_ENTRY = { name: 'Two Leaves', symbolUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/Indian_Election_Symbol_Two_Leaves.svg', favicon: 'https://www.aiadmk.com/favicon.ico' };
+const TVK_ENTRY  = { name: 'Whistle',    symbolUrl: 'https://commons.wikimedia.org/wiki/Special:FilePath/Indian_Election_Symbol_Whistle.svg', favicon: 'https://www.google.com/s2/favicons?domain=vijay.com&sz=128' };
 
 const PARTY_SYMBOLS = {
   DMK:    { name: 'Rising Sun',              symbolUrl: null, favicon: 'https://www.google.com/s2/favicons?domain=dmk.in&sz=128' },
   ADMK:   ADMK_ENTRY,
   AIADMK: ADMK_ENTRY, // alias — DB/API rows sometimes use the full official code instead of ADMK
-  TVK:    { name: 'Whistle',                 symbolUrl: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cg fill='%230066cc'%3E%3Cpath d='M12 30c0-10 8-18 20-18s20 8 20 18c0 4-2 7.7-5.2 10.5l6.8 6.8-5.7 5.7-7.7-7.7C38.8 48.7 35.2 50 32 50c-12 0-20-8-20-18z'/%3E%3Ccircle cx='42' cy='22' r='6' fill='%23fff'/%3E%3C/g%3E%3C/svg%3E", favicon: 'https://www.google.com/s2/favicons?domain=vijay.com&sz=128' },
+  TVK:    TVK_ENTRY,
   BJP:    { name: 'Lotus',                   symbolUrl: null, favicon: 'https://www.google.com/s2/favicons?domain=bjp.org&sz=128' },
   INC:    { name: 'Hand',                    symbolUrl: null, favicon: 'https://www.google.com/s2/favicons?domain=inc.in&sz=128' },
   PMK:    { name: 'Mango',                   symbolUrl: null, favicon: 'https://www.google.com/s2/favicons?domain=pmkofficial.com&sz=128' },
