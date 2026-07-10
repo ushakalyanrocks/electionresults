@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { sb } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { useLang } from '../context/LangContext';
@@ -41,16 +41,20 @@ const FIELD_CSS = `
   .me-vote-field { font-variant-numeric: tabular-nums; }
 `;
 
-// ---- Persistence: survive tab-switch / navigate-away / reload. ----
+// ---- Persistence: survive tab-switch / navigate-away / reload / MACHINE SWITCH. ----
+// Source of truth is Supabase (`multi_entry_drafts`, one row per user), so the
+// same login continues from any machine / any browser. localStorage is kept
+// only as a fast local cache for instant first paint; the DB copy wins if newer.
 // Only an explicit Reset clears this — everything else (opening another
 // tab, "Change seats", closing the browser) must leave it intact.
 const STORAGE_PREFIX = 'multiEntryDraft_';
+const DB_SAVE_DEBOUNCE_MS = 800; // don't hit Supabase on every keystroke
 
 function storageKeyFor(userId) {
   return userId ? `${STORAGE_PREFIX}${userId}` : null;
 }
 
-function loadPersisted(userId) {
+function loadLocal(userId) {
   const key = storageKeyFor(userId);
   if (!key) return null;
   try {
@@ -61,17 +65,17 @@ function loadPersisted(userId) {
   }
 }
 
-function savePersisted(userId, state) {
+function saveLocal(userId, state) {
   const key = storageKeyFor(userId);
   if (!key) return;
   try {
     localStorage.setItem(key, JSON.stringify(state));
   } catch {
-    // storage full / unavailable — fail silently, in-memory state still works
+    // storage full / unavailable — fail silently, DB copy still works
   }
 }
 
-function clearPersisted(userId) {
+function clearLocal(userId) {
   const key = storageKeyFor(userId);
   if (!key) return;
   try {
@@ -79,15 +83,77 @@ function clearPersisted(userId) {
   } catch { /* noop */ }
 }
 
+// ---- DB copy (works across machines) ----
+async function loadDraftFromDB(userId) {
+  if (!userId) return null;
+  try {
+    const { data, error } = await sb
+      .from('multi_entry_drafts')
+      .select('state')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (error) {
+      console.warn('[MultiEntry] draft load failed:', error.message);
+      return null;
+    }
+    return data?.state || null;
+  } catch (e) {
+    console.warn('[MultiEntry] draft load failed:', e);
+    return null;
+  }
+}
+
+async function saveDraftToDB(userId, state) {
+  if (!userId) return;
+  try {
+    const { error } = await sb.from('multi_entry_drafts').upsert(
+      { user_id: userId, state, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id' }
+    );
+    if (error) console.warn('[MultiEntry] draft save failed:', error.message);
+  } catch (e) {
+    console.warn('[MultiEntry] draft save failed:', e);
+  }
+}
+
+async function deleteDraftFromDB(userId) {
+  if (!userId) return;
+  try {
+    const { error } = await sb.from('multi_entry_drafts').delete().eq('user_id', userId);
+    if (error) console.warn('[MultiEntry] draft delete failed:', error.message);
+  } catch { /* noop */ }
+}
+
 function draftFor(c) {
   return {
     round: '', mode: 'total',
-    status: c.status === 'declared' || c.status === 'waitlist' ? 'counting' : (c.status || 'counting'),
+    // waitlist → counting (entry is starting); declared STAYS declared so a
+    // vote correction on a declared seat doesn't silently un-declare it on
+    // the live board. The operator can still change the dropdown manually.
+    status: c.status === 'waitlist' ? 'counting' : (c.status || 'counting'),
     inputs: {}, busy: false, done: false
   };
 }
 
-function Card({ c, draft, setDraft, parties, votesForConst, candsForConst, onSubmit, onReset, onViewResults, lang, t }) {
+// Drafts can arrive from the DB / old localStorage sessions with fields
+// missing (older shape, partial writes). Every draft entering state goes
+// through this so `inputs` etc. are ALWAYS present — no crash on
+// Object.values(d.inputs).
+const DRAFT_DEFAULTS = { round: '', mode: 'total', status: 'counting', inputs: {}, busy: false, done: false };
+
+function normalizeDraft(d) {
+  return { ...DRAFT_DEFAULTS, ...(d || {}), inputs: (d && d.inputs) || {} };
+}
+
+// Restore path (cache / DB): also clear transient flags — a draft must never
+// wake up stuck in "busy" from a session that closed mid-save.
+function normalizeDrafts(obj) {
+  const out = {};
+  Object.entries(obj || {}).forEach(([k, v]) => { out[k] = { ...normalizeDraft(v), busy: false }; });
+  return out;
+}
+
+function Card({ c, draft, setDraft, parties, votesForConst, candsForConst, onSubmit, onReset, onRemove, onViewResults, lang, t }) {
   // Same contestant rule as DataEntry: only candidate-mapped parties,
   // fallback to all parties so entry is never blocked.
   const entryParties = useMemo(() => {
@@ -112,7 +178,7 @@ function Card({ c, draft, setDraft, parties, votesForConst, candsForConst, onSub
     const merged = JSON.parse(JSON.stringify(votesForConst));
     if (roundNum >= 1) {
       entryParties.forEach(p => {
-        const raw = (draft.inputs[p.code] ?? '').trim();
+        const raw = ((draft.inputs || {})[p.code] ?? '').trim();
         if (raw === '') return;
         merged[p.code] ??= {};
         merged[p.code][roundNum] = { votes: Number(raw), entryMode: draft.mode };
@@ -126,7 +192,7 @@ function Card({ c, draft, setDraft, parties, votesForConst, candsForConst, onSub
     };
   }, [votesForConst, draft.inputs, draft.mode, roundNum, entryParties, parties]);
 
-  const anyTyped = entryParties.some(p => (draft.inputs[p.code] ?? '').trim() !== '');
+  const anyTyped = entryParties.some(p => ((draft.inputs || {})[p.code] ?? '').trim() !== '');
   const canSubmit = !draft.busy && !roundBad && draft.round !== '' && anyTyped;
   const roundMissing = anyTyped && draft.round === '';
   const leaderParty = preview.leader ? parties.find(p => p.code === preview.leader[0]) : null;
@@ -157,9 +223,21 @@ function Card({ c, draft, setDraft, parties, votesForConst, candsForConst, onSub
         <div style={{ fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {lang === 'ta' && c.name_ta ? c.name_ta : c.name_en}
         </div>
-        <span className="tabular" style={{ fontSize: 10.5, color: 'var(--text-lo)', whiteSpace: 'nowrap' }}>
-          {c.district} · R{lastRound}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexShrink: 0 }}>
+          <span className="tabular" style={{ fontSize: 10.5, color: 'var(--text-lo)', whiteSpace: 'nowrap' }}>
+            {c.district} · R{lastRound}
+          </span>
+          <button
+            type="button" title={t('multiRemoveCard') || 'Remove from grid'}
+            onClick={() => onRemove(c)}
+            style={{
+              border: 'none', background: 'transparent', cursor: 'pointer',
+              color: 'var(--text-lo)', fontSize: 13, lineHeight: 1, padding: '2px 4px', borderRadius: 4
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--bad, #dc2626)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-lo)'; }}
+          >✕</button>
+        </div>
       </div>
 
       {existingRounds.length > 0 && (
@@ -226,8 +304,8 @@ function Card({ c, draft, setDraft, parties, votesForConst, candsForConst, onSub
             </span>
             <input
               type="number" min="0" inputMode="numeric" placeholder="—"
-              value={draft.inputs[p.code] ?? ''}
-              onChange={e => set({ inputs: { ...draft.inputs, [p.code]: e.target.value } })}
+              value={(draft.inputs || {})[p.code] ?? ''}
+              onChange={e => set({ inputs: { ...(draft.inputs || {}), [p.code]: e.target.value } })}
               className="tabular me-field me-vote-field"
               style={{ width: 88, textAlign: 'right', fontSize: 12.5, fontWeight: 700 }}
             />
@@ -264,43 +342,92 @@ export default function MultiDataEntry({ constituencies, parties, votes, candida
   const { user, isFieldEntry, fullName } = useAuth();
   const { push } = useToast();
 
-  const persisted = useMemo(() => loadPersisted(user?.id), [user?.id]);
-  const eligibleConstituencies = useMemo(() => constituencies.filter(c => c.status !== 'declared'), [constituencies]);
+  // Local cache gives an instant first paint on the same machine; the DB
+  // copy (fetched below) replaces it if the DB version is newer.
+  const cached = useMemo(() => loadLocal(user?.id), [user?.id]);
 
-  const [selected, setSelected] = useState(() => new Set((persisted?.selected || []).filter(id => eligibleConstituencies.some(c => c.id === id))));
-  const [gridOpen, setGridOpen] = useState(() => persisted?.gridOpen || false);
+  const [selected, setSelected] = useState(() => new Set(cached?.selected || []));
+  const [gridOpen, setGridOpen] = useState(() => cached?.gridOpen || false);
   const [search, setSearch] = useState('');
-  const [drafts, setDrafts] = useState(() => persisted?.drafts || {}); // { [cid]: draft }
+  const [drafts, setDrafts] = useState(() => normalizeDrafts(cached?.drafts)); // { [cid]: draft }
   const [bulkBusy, setBulkBusy] = useState(false);
   const [resultsModal, setResultsModal] = useState(null); // constituency object, or null when closed
 
-  // Persist after every change — this is what makes tab-out/tab-back (and
-  // even a full reload) keep whatever was typed. Nothing here clears it;
-  // clearing only happens from the explicit Reset actions below.
+  // hydratedRef gates saving: until the DB copy has been fetched and applied,
+  // we must NOT write, or an empty first render would overwrite the real
+  // draft saved from another machine.
+  const hydratedRef = useRef(false);
+  const saveTimerRef = useRef(null);
+  const latestStateRef = useRef(null);
+
+  // ---- Hydrate from DB once per user ----
   useEffect(() => {
-    if (!user?.id) return;
-    savePersisted(user.id, { selected: [...selected], gridOpen, drafts });
+    hydratedRef.current = false;
+    let cancelled = false;
+    (async () => {
+      const dbState = await loadDraftFromDB(user?.id);
+      if (cancelled) return;
+      const dbAt = dbState?.savedAt || 0;
+      const localAt = cached?.savedAt || 0;
+      // DB wins unless this machine's cache is strictly newer (e.g. offline typing).
+      if (dbState && dbAt >= localAt) {
+        setSelected(new Set(dbState.selected || []));
+        setGridOpen(!!dbState.gridOpen);
+        setDrafts(normalizeDrafts(dbState.drafts));
+      }
+      hydratedRef.current = true;
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  // Persist after every change — this is what makes tab-out/tab-back, a full
+  // reload, AND switching to another machine/browser keep whatever was typed.
+  // localStorage is written immediately (cheap); the DB write is debounced so
+  // we don't upsert on every keystroke. Nothing here clears it; clearing only
+  // happens from the explicit Reset actions below.
+  useEffect(() => {
+    if (!user?.id || !hydratedRef.current) return;
+    const state = { selected: [...selected], gridOpen, drafts, savedAt: Date.now() };
+    latestStateRef.current = state;
+    saveLocal(user.id, state);
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      saveTimerRef.current = null;
+      saveDraftToDB(user.id, latestStateRef.current);
+    }, DB_SAVE_DEBOUNCE_MS);
   }, [user?.id, selected, gridOpen, drafts]);
 
+  // Flush any pending debounced DB write when leaving the screen, so the last
+  // few keystrokes before navigating away still reach the DB.
   useEffect(() => {
-    setSelected(prev => {
-      const next = new Set();
-      prev.forEach(id => {
-        if (eligibleConstituencies.some(c => c.id === id)) next.add(id);
-      });
-      return next;
-    });
-  }, [eligibleConstituencies]);
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+        if (user?.id && latestStateRef.current) saveDraftToDB(user.id, latestStateRef.current);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  // NOTE (v2.4.1): there used to be an effect here that pruned `selected`
+  // whenever the constituency list changed (dropping declared seats). That
+  // was destructive — when seats got declared or the list briefly refreshed,
+  // it silently shrank the user's saved selection and then PERSISTED the
+  // shrunk set to the DB, ending in the "0 constituencies" dead grid.
+  // Selection is now never auto-modified: stale ids are simply ignored at
+  // render time, and only the user adds/removes seats.
 
   const partyByCode = useMemo(() => Object.fromEntries(parties.map(p => [p.code, p])), [parties]);
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
-    const pool = eligibleConstituencies;
+    const pool = constituencies;
     if (!s) return pool;
     return pool.filter(c =>
       c.name_en.toLowerCase().includes(s) || (c.name_ta || '').includes(s) || c.district.toLowerCase().includes(s));
-  }, [eligibleConstituencies, search]);
+  }, [constituencies, search]);
 
   const toggle = (id) => {
     setSelected(prev => {
@@ -315,7 +442,7 @@ export default function MultiDataEntry({ constituencies, parties, votes, candida
   const openGrid = () => {
     setDrafts(prev => {
       const d = { ...prev };
-      eligibleConstituencies.filter(c => selected.has(c.id)).forEach(c => {
+      constituencies.filter(c => selected.has(c.id)).forEach(c => {
         if (!d[c.id]) d[c.id] = draftFor(c); // only seed newly-added seats, keep existing typed drafts
       });
       return d;
@@ -323,21 +450,80 @@ export default function MultiDataEntry({ constituencies, parties, votes, candida
     setGridOpen(true);
   };
 
+  // Updater always receives a COMPLETE draft (normalized), even if this card
+  // was never seeded — Card's round pre-fill effect can fire before openGrid
+  // seeds a draft, which previously created a partial object and crashed
+  // Object.values(d.inputs) later.
   const setDraft = (cid) => (updater) =>
-    setDrafts(prev => ({ ...prev, [cid]: typeof updater === 'function' ? updater(prev[cid]) : updater }));
+    setDrafts(prev => {
+      const cur = normalizeDraft(prev[cid]);
+      const next = typeof updater === 'function' ? updater(cur) : updater;
+      return { ...prev, [cid]: normalizeDraft(next) };
+    });
+
+  // ---- Removing cards from the grid ----
+  const hasUnsavedInput = (cid) => {
+    const d = drafts[cid];
+    return !!d && Object.values(d.inputs || {}).some(v => (v ?? '').trim() !== '');
+  };
+
+  // Silent removal (no confirm) — used after a Declared submit and by the
+  // auto-declare effect. Drops the seat from selection AND deletes its draft.
+  const removeCardSilent = (cid) => {
+    setSelected(prev => { const s = new Set(prev); s.delete(cid); return s; });
+    setDrafts(prev => { const d = { ...prev }; delete d[cid]; return d; });
+  };
+
+  // ✕ button — confirm only if the card still holds unsaved typed votes.
+  const removeCard = (c) => {
+    if (hasUnsavedInput(c.id) &&
+      !window.confirm(t('multiRemoveConfirm') || `${c.name_en}: remove from grid? Typed votes not yet submitted will be discarded.`)) return;
+    removeCardSilent(c.id);
+  };
+
+  // Auto-remove seats that BECOME declared while sitting in the grid — e.g.
+  // declared from Single Entry or by another operator (arrives via refresh /
+  // realtime). Two guards so this can never eat data like the old prune did:
+  //   1. Transition-only: a seat that was ALREADY declared when the user
+  //      selected it (correction workflow) is left alone.
+  //   2. A card with unsaved typed votes is never auto-removed — the operator
+  //      keeps it until they submit or ✕ it themselves.
+  const prevStatusRef = useRef(null);
+  useEffect(() => {
+    if (constituencies.length === 0) return;
+    const prev = prevStatusRef.current;
+    const next = {};
+    constituencies.forEach(c => { next[c.id] = c.status; });
+    prevStatusRef.current = next;
+    if (!prev) return; // first pass — just record statuses, remove nothing
+    const toRemove = constituencies.filter(c =>
+      selected.has(c.id) &&
+      c.status === 'declared' &&
+      prev[c.id] && prev[c.id] !== 'declared' &&
+      !hasUnsavedInput(c.id)
+    );
+    if (toRemove.length === 0) return;
+    setSelected(prevSel => { const s = new Set(prevSel); toRemove.forEach(c => s.delete(c.id)); return s; });
+    setDrafts(prevD => { const d = { ...prevD }; toRemove.forEach(c => delete d[c.id]); return d; });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [constituencies]);
 
   // Explicit per-card reset (the ↺ button) — clears one card's typed round/votes.
   const resetCard = (c) => setDraft(c.id)(() => draftFor(c));
 
   // Explicit "Reset all" — clears the whole saved session (selection, grid,
-  // every card's draft) and wipes localStorage. This is the ONLY thing that
-  // should discard everything; tab-switching or navigating away must not.
+  // every card's draft) and wipes BOTH the local cache and the DB row, so the
+  // reset takes effect on every machine. This is the ONLY thing that should
+  // discard everything; tab-switching or navigating away must not.
   const resetAll = () => {
     if (!window.confirm(t('resetAllConfirm') || 'Clear all unsaved entries in this multi-entry session?')) return;
+    if (saveTimerRef.current) { clearTimeout(saveTimerRef.current); saveTimerRef.current = null; }
     setSelected(new Set());
     setDrafts({});
     setGridOpen(false);
-    clearPersisted(user?.id);
+    clearLocal(user?.id);
+    latestStateRef.current = { selected: [], gridOpen: false, drafts: {}, savedAt: Date.now() };
+    deleteDraftFromDB(user?.id);
   };
 
   // ---- Submit one card: mirrors DataEntry.submitAll exactly ----
@@ -346,7 +532,7 @@ export default function MultiDataEntry({ constituencies, parties, votes, candida
     setDraft(c.id)(d => ({ ...d, busy: true }));
     try {
       const rows = entryParties
-        .map(p => ({ code: p.code, raw: (draft.inputs[p.code] ?? '').trim() }))
+        .map(p => ({ code: p.code, raw: ((draft.inputs || {})[p.code] ?? '').trim() }))
         .filter(x => x.raw !== '')
         .map(x => ({
           constituency_id: c.id, party_code: x.code, round: roundNum,
@@ -397,8 +583,15 @@ export default function MultiDataEntry({ constituencies, parties, votes, candida
         actor: user.id, actor_name: fullName || user.email
       }]);
 
-      setDraft(c.id)(d => ({ ...d, busy: false, done: true, round: '', inputs: {} }));
-      push(`${c.name_en} · R${roundNum} ${correcting ? t('correctionLabel') : '✓'}`, 'success');
+      if (draft.status === 'declared') {
+        // Seat is done — take its card out of the grid right away instead of
+        // waiting for the refresh round-trip.
+        removeCardSilent(c.id);
+        push(`${c.name_en} · R${roundNum} ✓ ${t('declared')}`, 'success');
+      } else {
+        setDraft(c.id)(d => ({ ...d, busy: false, done: true, round: '', inputs: {} }));
+        push(`${c.name_en} · R${roundNum} ${correcting ? t('correctionLabel') : '✓'}`, 'success');
+      }
       refresh();
       return true;
     } catch (e) {
@@ -412,14 +605,14 @@ export default function MultiDataEntry({ constituencies, parties, votes, candida
   const submitAllFilled = async () => {
     setBulkBusy(true);
     let ok = 0, fail = 0;
-    for (const c of eligibleConstituencies.filter(x => selected.has(x.id))) {
+    for (const c of constituencies.filter(x => selected.has(x.id))) {
       const draft = drafts[c.id];
       if (!draft || draft.busy) continue;
       const roundNum = Number(draft.round);
       const candsForConst = candidates[c.id] || {};
       const withCand = parties.filter(p => candsForConst[p.code]);
       const entryParties = withCand.length > 0 ? withCand : parties;
-      const anyTyped = entryParties.some(p => (draft.inputs[p.code] ?? '').trim() !== '');
+      const anyTyped = entryParties.some(p => ((draft.inputs || {})[p.code] ?? '').trim() !== '');
       if (draft.round === '' || !Number.isInteger(roundNum) || roundNum < 1 || !anyTyped) continue;
       const existing = new Set();
       Object.values(votes[c.id] || {}).forEach(byRound => Object.keys(byRound).forEach(r => existing.add(Number(r))));
@@ -438,14 +631,29 @@ export default function MultiDataEntry({ constituencies, parties, votes, candida
     );
   }
 
-  const selectedList = eligibleConstituencies.filter(c => selected.has(c.id));
+  const selectedList = constituencies.filter(c => selected.has(c.id));
   const filledCount = selectedList.filter(c => {
     const d = drafts[c.id];
-    return d && d.round !== '' && Object.values(d.inputs).some(v => (v ?? '').trim() !== '');
+    return d && d.round !== '' && Object.values(d.inputs || {}).some(v => (v ?? '').trim() !== '');
   }).length;
 
+  // Constituency master list not loaded yet — don't render an empty grid or
+  // an empty picker (both would look like lost data). Just wait.
+  if (constituencies.length === 0) {
+    return (
+      <div className="container" style={{ marginTop: 20 }}>
+        <div className="glass" style={{ padding: 24, textAlign: 'center', color: 'var(--text-mid)' }}>…</div>
+      </div>
+    );
+  }
+
+  // Recovery: if a saved session says "grid open" but resolves to zero seats
+  // (e.g. state saved by the old buggy prune, or scope changed in Election
+  // Setup), fall back to the picker instead of a dead "0 constituencies" grid.
+  const showPicker = !gridOpen || selectedList.length === 0;
+
   // ---------- Phase 1: pick constituencies ----------
-  if (!gridOpen) {
+  if (showPicker) {
     return (
       <div className="container" style={{ marginTop: 20, maxWidth: 720, marginBottom: 40 }}>
         <div className="glass" style={{ padding: 18 }}>
@@ -483,6 +691,14 @@ export default function MultiDataEntry({ constituencies, parties, votes, candida
                 <span style={{ flex: 1 }}>
                   {lang === 'ta' && c.name_ta ? c.name_ta : c.name_en}
                   <span style={{ color: 'var(--text-lo)', fontSize: 11.5 }}> · {c.district}</span>
+                  {c.status === 'declared' && (
+                    <span style={{
+                      marginLeft: 6, fontSize: 10, fontWeight: 700, color: 'var(--good, #16a34a)',
+                      background: 'var(--good-soft, rgba(22,163,74,0.12))', padding: '1px 6px', borderRadius: 10
+                    }}>
+                      ✓ {t('declared')}
+                    </span>
+                  )}
                 </span>
                 <span className="tabular" style={{ fontSize: 11, color: 'var(--text-lo)' }}>R{c.current_round || 0}</span>
               </label>
@@ -530,6 +746,7 @@ export default function MultiDataEntry({ constituencies, parties, votes, candida
             candsForConst={candidates[c.id] || {}}
             onSubmit={submitCard}
             onReset={resetCard}
+            onRemove={removeCard}
             onViewResults={setResultsModal}
             lang={lang} t={t}
           />
