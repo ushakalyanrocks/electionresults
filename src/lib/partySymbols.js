@@ -29,7 +29,7 @@ export default PARTY_SYMBOLS;
 
 const PARTY_SYMBOLS = {
   DMK:    { name: 'Rising Sun',              symbolUrl: null, favicon: 'https://www.google.com/s2/favicons?domain=dmk.in&sz=128' },
-  ADMK:   { name: 'Two Leaves',              symbolUrl: null, favicon: 'https://www.aiadmk.com/favicon.ico' },
+  ADMK:   { name: 'Two Leaves',              symbolUrl: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cg fill='%230a9d4f'%3E%3Cpath d='M32 2c-9.6 0-20 9.3-20 20 0 16 18 28 20 40 2-12 20-24 20-40 0-10.7-10.4-20-20-20z'/%3E%3Cpath d='M12 22c0-8 6.4-14 14-14 7.7 0 14 6.3 14 14 0 9.6-8.4 16-14 22-5.6-6-14-12.4-14-22z'/%3E%3C/g%3E%3C/svg%3E", favicon: 'https://www.aiadmk.com/favicon.ico' },
   TVK:    { name: 'Whistle',                 symbolUrl: null, favicon: 'https://www.google.com/s2/favicons?domain=vijay.com&sz=128' },
   BJP:    { name: 'Lotus',                   symbolUrl: null, favicon: 'https://www.google.com/s2/favicons?domain=bjp.org&sz=128' },
   INC:    { name: 'Hand',                    symbolUrl: null, favicon: 'https://www.google.com/s2/favicons?domain=inc.in&sz=128' },
